@@ -2,7 +2,6 @@ package org.example;
 
 import io.restassured.specification.RequestSpecification;
 import io.restassured.response.Response;
-import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.restassured.RestAssured;
@@ -27,8 +26,7 @@ public class AuthTests {
         loginUser();
     }
     @Test
-    @Feature("User Login")
-    @Description("Verify user can successfully login with correct credentials")
+    @Feature("Авторизация пользователя")
     public void testUserLoginSuccess() {
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
@@ -40,7 +38,7 @@ public class AuthTests {
         Assert.assertEquals(response.statusCode(), 200, "Status code 200");
     }
     @Test
-    @Feature("Авторизация пользователя")
+    @Feature("Получение информации о пользователе")
     public void testGetUserInfo() {
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
@@ -51,7 +49,7 @@ public class AuthTests {
         Assert.assertEquals(response.statusCode(), 200, "Status code 200");
     }
     @Test
-    @Feature("Получение информации о пользователе")
+    @Feature("Изменение пользователя")
     public void testUpdateUserInfo() {
         String newFirstName = "UpdatedFirstName";
         Response response = RestAssured.given()
