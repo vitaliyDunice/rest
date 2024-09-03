@@ -1,13 +1,13 @@
 package org.example;
 
+import io.restassured.specification.RequestSpecification;
+import io.restassured.response.Response;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.restassured.RestAssured;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
+import org.json.JSONObject;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -84,18 +84,26 @@ public class AuthTests {
         // Параметры для поста
         String title = "Test Post Title";
         String text = "This is a test post text";
-        String filePath = "C:/Users/Виталий/Desktop/sc.png"; // Путь к вашему файлу
+        String filePath = "src/main/resources/sc.png"; // Проверьте корректность пути
         String[] tags = {"tag1", "tag2"};
+
+        // Проверка существования файла
+        File file = new File(filePath);
+        Assert.assertTrue(file.exists(), "Файл не существует по указанному пути: " + filePath);
 
         // Создаем запрос
         RequestSpecification request = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.createPost)
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .multiPart("file", new File(filePath)) // Отправляем файл
                 .multiPart("title", title)
                 .multiPart("text", text)
-                .multiPart("tags", tags); // Отправляем теги как массив
+                .multiPart("file", file, "image/png"); // Явно указываем MIME-тип файла
+
+        // Отправляем каждый тег как отдельный multipart
+        for (String tag : tags) {
+            request.multiPart("tags", tag);
+        }
 
         // Выполняем запрос
         Response response = request.when().post();
@@ -111,8 +119,67 @@ public class AuthTests {
         Assert.assertNotNull(testData.postId, "Post ID is null");
     }
 
+    @Test
+    @Feature("Update Post")
+    @Description("Verify user can update a post")
+    public void testUpdatePost() {
+        // Создаем пост перед обновлением
+        testCreatePost(); // Убедимся, что пост существует
+
+        // Параметры для обновления поста
+        String updatedTitle = "Updated Test Post Title";
+        String updatedText = "This is an updated test post text";
+        String updatedFilePath = "src/main/resources/s.png"; // Проверьте корректность пути к новому файлу
+        String[] updatedTags = {"updatedTag1", "updatedTag2"};
+
+        // Проверка существования нового файла
+        File updatedFile = new File(updatedFilePath);
+        Assert.assertTrue(updatedFile.exists(), "Файл не существует по указанному пути: " + updatedFilePath);
+
+        // Создаем запрос для обновления поста
+        RequestSpecification request = RestAssured.given()
+                .baseUri(endPoints.baseUrl)
+                .basePath(endPoints.updatePost.replace("{id}", testData.postId))
+                .header("Authorization", "Bearer " + testData.accessToken)
+                .multiPart("title", updatedTitle)
+                .multiPart("text", updatedText)
+                .multiPart("file", updatedFile, "image/png"); // Явно указываем MIME-тип файла
+
+        // Отправляем каждый тег как отдельный multipart
+        for (String tag : updatedTags) {
+            request.multiPart("tags", tag);
+        }
+
+        // Выполняем запрос
+        Response response = request.when().patch();
+
+        // Выводим тело ответа для отладки
+        System.out.println("Response Body: " + response.getBody().asString());
+
+        // Проверяем статус код
+        Assert.assertEquals(response.statusCode(), 200, "Status code is not 200 for post update");
+
+        // Проверяем, что пост был обновлен и возвращен в ответе
+        Assert.assertEquals(response.jsonPath().getString("title"), updatedTitle, "Updated title mismatch");
+        Assert.assertEquals(response.jsonPath().getString("text"), updatedText, "Updated text mismatch");
+
+    }
 
 
+    @Test
+    @Feature("Delete Post")
+    @Description("Verify user can delete a post")
+    public void testDeletePost() {
+        testCreatePost();
+        Response response = RestAssured.given()
+                .baseUri(endPoints.baseUrl)
+                .basePath(endPoints.deletePost.replace("{id}", testData.postId))
+                .header("Authorization", "Bearer " + testData.accessToken)
+                .when()
+                .delete();
+        Assert.assertEquals(response.statusCode(), 200, "Status code is not 200 for post deletion");
+
+    }
 
     @Test
     @Feature("Create Comment")
@@ -121,17 +188,26 @@ public class AuthTests {
         // Создаем пост перед созданием комментария
         testCreatePost(); // Убедимся, что пост существует
 
+        // Параметры для комментария
         String commentContent = "This is a test comment";
 
-        // Создаем комментарий
+        // Создаем тело запроса в формате JSON
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("postId", testData.postId);
+        requestBody.put("text", commentContent);
+
+        // Создаем запрос для добавления комментария
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.comment)
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .body("{\"postId\":\"" + testData.postId + "\",\"content\":\"" + commentContent + "\"}")
+                .body(requestBody.toString())
                 .when()
                 .post();
+
+        // Выводим тело ответа для отладки
+        System.out.println("Create Comment Response Body: " + response.getBody().asString());
 
         // Проверяем статус код
         Assert.assertEquals(response.statusCode(), 201, "Status code is not 201");
@@ -139,7 +215,9 @@ public class AuthTests {
         // Проверяем, что комментарий был создан и возвращен в ответе
         testData.commentId = response.jsonPath().getString("id");
         Assert.assertNotNull(testData.commentId, "Comment ID is null");
+        Assert.assertEquals(response.jsonPath().getString("text"), commentContent, "Comment content mismatch");
     }
+
 
     @Test
     @Feature("Update Comment")
@@ -147,24 +225,36 @@ public class AuthTests {
     public void testUpdateComment() {
         testCreateComment(); // Убедимся, что комментарий существует
         String updatedContent = "This is an updated comment";
+
+        // Проверяем, что commentId установлен правильно
+        Assert.assertNotNull(testData.commentId, "Comment ID is null");
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.updateComment.replace("{id}", testData.commentId))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .body("{\"content\":\"" + updatedContent + "\"}")
+                .body("{\"text\":\"" + updatedContent + "\"}")
                 .when()
                 .patch();
 
+        // Выводим тело ответа для отладки
+        System.out.println("Update Comment Response Body: " + response.getBody().asString());
+
         Assert.assertEquals(response.statusCode(), 200, "Status code is not 200");
-        Assert.assertEquals(response.jsonPath().getString("content"), updatedContent, "Comment content mismatch");
+        Assert.assertEquals(response.jsonPath().getString("text"), updatedContent, "Comment content mismatch");
     }
+
 
     @Test
     @Feature("Delete Comment")
     @Description("Verify user can delete a comment")
     public void testDeleteComment() {
         testCreateComment(); // Убедимся, что комментарий существует
+
+        // Проверяем, что commentId установлен правильно
+        Assert.assertNotNull(testData.commentId, "Comment ID is null");
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.deleteComment.replace("{id}", testData.commentId))
@@ -172,23 +262,12 @@ public class AuthTests {
                 .when()
                 .delete();
 
-        Assert.assertEquals(response.statusCode(), 204, "Status code is not 204");
+        // Выводим тело ответа для отладки
+        System.out.println("Delete Comment Response Body: " + response.getBody().asString());
+
+        Assert.assertEquals(response.statusCode(), 200, "Status code is not 200");
     }
 
-    @AfterMethod
-    public void tearDown() {
-        // Очистка созданных данных, если это необходимо
-        if (testData.postId != null) {
-            RestAssured.given()
-                    .baseUri(endPoints.baseUrl)
-                    .basePath(endPoints.deletePost.replace("{id}", testData.postId))
-                    .header("Authorization", "Bearer " + testData.accessToken)
-                    .when()
-                    .delete();
-            testData.postId = null;
-        }
-        // Удаление пользователя в данном случае не нужно
-    }
 
     private void loginUser() {
         Response response = RestAssured.given()
@@ -204,4 +283,3 @@ public class AuthTests {
         testData.userId = response.jsonPath().getString("user.id");
     }
 }
-

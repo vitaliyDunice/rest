@@ -1,0 +1,1 @@
+{"uuid":"6e5039d1-d94d-49ce-add7-d744abd2477d","name":"org.example.AuthTests.setup","children":["f8ba5a8c-7a09-4ede-b553-55815595bcc9"],"description":"","befores":[{"name":"setup","status":"passed","stage":"finished","description":"","steps":[],"attachments":[],"parameters":[],"start":1725374854269,"stop":1725374854818}],"afters":[],"start":1725374854269,"stop":1725374854818}
