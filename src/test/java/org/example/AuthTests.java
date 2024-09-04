@@ -253,26 +253,4 @@ public class AuthTests {
         testData.accessToken = response.jsonPath().getString("accessToken");
         testData.userId = response.jsonPath().getString("user.id");
     }
-
-    private RequestSpecification createPostRequest(String title, String text, File file, String[] tags) {
-        return RestAssured.given()
-                .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.createPost)
-                .header("Authorization", "Bearer " + testData.accessToken)
-                .multiPart("title", title)
-                .multiPart("text", text)
-                .multiPart("image", file)
-                .multiPart("tags", tags);
-    }
-
-    private RequestSpecification updatePostRequest(String title, String text, File file, String[] tags) {
-        return RestAssured.given()
-                .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.updatePost.replace("{id}", testData.postId))
-                .header("Authorization", "Bearer " + testData.accessToken)
-                .multiPart("title", title)
-                .multiPart("text", text)
-                .multiPart("image", file)
-                .multiPart("tags", tags);
-    }
 }
