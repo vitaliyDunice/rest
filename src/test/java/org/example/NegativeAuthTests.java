@@ -7,9 +7,9 @@ import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.restassured.RestAssured;
 import org.json.JSONObject;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 
 import java.io.File;
 
@@ -29,48 +29,67 @@ public class NegativeAuthTests {
 
     @Test
     @Feature("Авторизация пользователя")
-    public void testUserLoginFailureWithIncorrectCredentials() {
-        String incorrectEmail = "incorrect.email@example.com";
-        String incorrectPassword = "wrongpassword";
+    @Description("Проверка авторизации с некорректными учетными данными.")
+    public void givenIncorrectCredentials_whenLogin_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String Email = "t.email@example.com";
+        String Pass = "pass";
 
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.login)
                 .header("Content-Type", "application/json")
-                .body("{\"email\":\"" + incorrectEmail + "\",\"password\":\"" + incorrectPassword + "\"}")
+                .body("{\"email\":\"" + Email + "\",\"password\":\"" + Pass + "\"}")
                 .when()
                 .post();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Получение информации о пользователе")
-    public void testGetUserInfoWithoutAuthorization() {
+    @Description("Проверка получения информации о пользователе без авторизации.")
+    public void givenNoAuthorization_whenGetUserInfo_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.whoAmI)
                 .when()
                 .get();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401 ");
+        softAssert.assertAll();
     }
 
     @Test
     @Feature("Обновление информации о пользователе")
-    public void testUpdateUserInfoWithInvalidToken() {
-        String newFirstName = "UpdatedFirstName";
-        String invalidToken = "invalidToken123";
+    @Description("Проверка обновления информации о пользователе с невалидным токеном.")
+    public void givenInvalidToken_whenUpdateUserInfo_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String news = "Updat";
+        String Token = "Token123";
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.updateUser.replace("{id}", "validUserId"))
-                .header("Authorization", "Bearer " + invalidToken)
-                .multiPart("firstName", newFirstName)
+                .header("Authorization", "Bearer " + Token)
+                .multiPart("firstName", news)
                 .when()
                 .patch();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Создание поста")
-    public void testCreatePostWithMissingFields() {
+    @Description("Проверка создания поста с отсутствующими обязательными полями.")
+    public void givenMissingFields_whenCreatePost_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
         File file = new File("src/main/resources/sc.png");
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.createPost)
@@ -78,42 +97,60 @@ public class NegativeAuthTests {
                 .multiPart("file", file, "image/png")
                 .when()
                 .post();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Обновление поста")
-    public void testUpdatePostWithNonExistentId() {
-        String updatedTitle = "Updated Test Post Title";
-        String updatedText = "This is an updated test post text";
-        String nonExistentPostId = "nonExistentPostId";
+    @Description("Проверка обновления поста с несуществующим идентификатором.")
+    public void givenNonExistentPostId_whenUpdatePost_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String Title = "Title";
+        String Text = "text";
+        String nonPost = "nonPost";
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.updatePost.replace("{id}", nonExistentPostId))
+                .basePath(endPoints.updatePost.replace("{id}", nonPost))
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .multiPart("title", updatedTitle)
-                .multiPart("text", updatedText)
+                .multiPart("title", Title)
+                .multiPart("text", Text)
                 .when()
                 .patch();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Удаление поста")
-    public void testDeletePostWithNonExistentId() {
-        String nonExistentPostId = "nonExistentPostId";
+    @Description("Проверка удаления поста с несуществующим идентификатором.")
+    public void givenNonExistentPostId_whenDeletePost_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String ExPost = "ExPost";
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.deletePost.replace("{id}", nonExistentPostId))
+                .basePath(endPoints.deletePost.replace("{id}", ExPost))
                 .header("Authorization", "Bearer " + testData.accessToken)
                 .when()
                 .delete();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Создание комментария")
-    public void testCreateCommentWithMissingPostId() {
-        String commentContent = "comment";
+    @Description("Проверка создания комментария без идентификатора поста.")
+    public void givenMissingPostId_whenCreateComment_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String commen = "comment";
         JSONObject requestBody = new JSONObject();
-        requestBody.put("text", commentContent);
+        requestBody.put("text", commen);
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.comment)
@@ -122,33 +159,47 @@ public class NegativeAuthTests {
                 .body(requestBody.toString())
                 .when()
                 .post();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Обновление комментария")
-    public void testUpdateCommentWithNonExistentId() {
-        String updatedContent = "Updated comment";
-        String nonExistentCommentId = "nonExistentCommentId";
+    @Description("Проверка обновления комментария с несуществующим идентификатором.")
+    public void givenNonExistentCommentId_whenUpdateComment_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String update = "Update";
+        String nonExis = "nonExis";
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.updateComment.replace("{id}", nonExistentCommentId))
+                .basePath(endPoints.updateComment.replace("{id}", nonExis))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .body("{\"text\":\"" + updatedContent + "\"}")
+                .body("{\"text\":\"" + update + "\"}")
                 .when()
                 .patch();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401 ");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
+
     @Test
     @Feature("Удаление комментария")
-    public void testDeleteCommentWithNonExistentId() {
-        String nonExistentCommentId = "nonExistentCommentId";
+    @Description("Проверка удаления комментария с несуществующим идентификатором.")
+    public void givenNonExistentCommentId_whenDeleteComment_thenUnauthorized() {
+        SoftAssert softAssert = new SoftAssert();
+        String Com = "Com";
+
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.deleteComment.replace("{id}", nonExistentCommentId))
+                .basePath(endPoints.deleteComment.replace("{id}", Com))
                 .header("Authorization", "Bearer " + testData.accessToken)
                 .when()
                 .delete();
-        Assert.assertEquals(response.statusCode(), 401, "Status code 401");
+
+        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertAll();
     }
 }
