@@ -1,5 +1,6 @@
 package org.example;
 
+import io.qameta.allure.Step;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.response.Response;
 import io.qameta.allure.Description;
@@ -7,6 +8,7 @@ import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.restassured.RestAssured;
 import org.json.JSONObject;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
@@ -25,6 +27,7 @@ public class NegativeAuthTests {
         testData = new TestData();
         testData.testUserEmail = "5test.user@example.com";
         testData.testUserPassword = "password123";
+        loginUser();
     }
 
     @Test
@@ -87,18 +90,20 @@ public class NegativeAuthTests {
     @Feature("Создание поста")
     @Description("Проверка создания поста с отсутствующими обязательными полями.")
     public void givenMissingFields_whenCreatePost_thenUnauthorized() {
-        SoftAssert softAssert = new SoftAssert();
-        File file = new File("src/main/resources/sc.png");
-
-        Response response = RestAssured.given()
+        String title = "Title";
+        String text = "text";
+        String filePath = "src/main/resources/sc.png";
+        File file = new File(filePath);
+        RequestSpecification request = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.createPost)
                 .header("Authorization", "Bearer " + testData.accessToken)
-                .multiPart("file", file, "image/png")
-                .when()
-                .post();
-
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+                .multiPart("title", title)
+                .multiPart("text", text)
+                .multiPart("file", file, "image/png");
+        Response response = request.when().post();
+        SoftAssert softAssert = new SoftAssert();
+        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
         softAssert.assertAll();
     }
 
@@ -120,7 +125,7 @@ public class NegativeAuthTests {
                 .when()
                 .patch();
 
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
         softAssert.assertAll();
     }
 
@@ -138,7 +143,7 @@ public class NegativeAuthTests {
                 .when()
                 .delete();
 
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
         softAssert.assertAll();
     }
 
@@ -160,7 +165,7 @@ public class NegativeAuthTests {
                 .when()
                 .post();
 
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
         softAssert.assertAll();
     }
 
@@ -181,7 +186,7 @@ public class NegativeAuthTests {
                 .when()
                 .patch();
 
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
         softAssert.assertAll();
     }
 
@@ -191,15 +196,30 @@ public class NegativeAuthTests {
     public void givenNonExistentCommentId_whenDeleteComment_thenUnauthorized() {
         SoftAssert softAssert = new SoftAssert();
         String Com = "Com";
-
+        String end = "sjdfbsdjkf";
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
                 .basePath(endPoints.deleteComment.replace("{id}", Com))
-                .header("Authorization", "Bearer " + testData.accessToken)
+                .header("Authorization", "Bearer " + end)
                 .when()
                 .delete();
 
         softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
         softAssert.assertAll();
+    }
+
+    @Step("Login user and obtain access token")
+    private void loginUser() {
+        Response response = RestAssured.given()
+                .baseUri(endPoints.baseUrl)
+                .basePath(endPoints.login)
+                .header("Content-Type", "application/json")
+                .body("{\"email\":\"" + testData.testUserEmail + "\",\"password\":\"" + testData.testUserPassword + "\"}")
+                .when()
+                .post();
+
+        Assert.assertEquals(response.statusCode(), 200, "User login failed");
+        testData.accessToken = response.jsonPath().getString("accessToken");
+        testData.userId = response.jsonPath().getString("user.id");
     }
 }
