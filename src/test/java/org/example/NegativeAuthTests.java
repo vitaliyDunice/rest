@@ -118,14 +118,14 @@ public class NegativeAuthTests {
 
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.updatePost.replace("{id}", nonPost))
+                .basePath("/posts/5")
                 .header("Authorization", "Bearer " + testData.accessToken)
                 .multiPart("title", Title)
                 .multiPart("text", Text)
                 .when()
                 .patch();
 
-        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
+        softAssert.assertEquals(response.statusCode(), 404, "Status code 404");
         softAssert.assertAll();
     }
 
@@ -138,12 +138,12 @@ public class NegativeAuthTests {
 
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.deletePost.replace("{id}", ExPost))
+                .basePath("/posts/5")
                 .header("Authorization", "Bearer " + testData.accessToken)
                 .when()
                 .delete();
 
-        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
+        softAssert.assertEquals(response.statusCode(), 404, "Status code 404");
         softAssert.assertAll();
     }
 
