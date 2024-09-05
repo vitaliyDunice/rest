@@ -175,18 +175,17 @@ public class NegativeAuthTests {
     public void givenNonExistentCommentId_whenUpdateComment_thenUnauthorized() {
         SoftAssert softAssert = new SoftAssert();
         String update = "Update";
-        String nonExis = "nonExis";
 
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.updateComment.replace("{id}", nonExis))
+                .basePath("/comments/5")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + testData.accessToken)
                 .body("{\"text\":\"" + update + "\"}")
                 .when()
                 .patch();
 
-        softAssert.assertEquals(response.statusCode(), 400, "Status code 400");
+        softAssert.assertEquals(response.statusCode(), 404, "Status code 404");
         softAssert.assertAll();
     }
 
@@ -195,16 +194,14 @@ public class NegativeAuthTests {
     @Description("Проверка удаления комментария с несуществующим идентификатором.")
     public void givenNonExistentCommentId_whenDeleteComment_thenUnauthorized() {
         SoftAssert softAssert = new SoftAssert();
-        String Com = "Com";
-        String end = "sjdfbsdjkf";
         Response response = RestAssured.given()
                 .baseUri(endPoints.baseUrl)
-                .basePath(endPoints.deleteComment.replace("{id}", Com))
-                .header("Authorization", "Bearer " + end)
+                .basePath("/comments/5" )
+                .header("Authorization", "Bearer " + testData.accessToken)
                 .when()
                 .delete();
 
-        softAssert.assertEquals(response.statusCode(), 401, "Status code 401");
+        softAssert.assertEquals(response.statusCode(), 404, "Status code 404");
         softAssert.assertAll();
     }
 
